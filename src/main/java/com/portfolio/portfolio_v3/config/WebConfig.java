@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
      * ✅ WebMvcConfigurer를 구현한 익명 클래스에서 addCorsMappings 메서드를 오버라이딩하여 CORS 설정을 추가한다.
      */
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
+    public WebMvcConfigurer corsConfigurer() {// 테스트
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
