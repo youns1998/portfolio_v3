@@ -4,12 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class IpUtil {
 
+    private IpUtil() {}
+
     public static String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty()) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
+        return (ip == null || ip.isEmpty()) ? request.getRemoteAddr() : ip;
     }
 
     public static String maskIp(String ip) {

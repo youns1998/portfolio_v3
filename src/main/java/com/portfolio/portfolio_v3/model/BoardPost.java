@@ -44,17 +44,14 @@ public class BoardPost {
     @OneToMany(mappedBy = "boardPost", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
-    @Builder.Default
     @Column(nullable = false)
     private int votes = 0;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private int commentCount = 0;
-
-    @Builder.Default
     @Column(nullable = false)
     private int views = 0;
+
+    @Column(nullable = false)
+    private int commentCount = 0; // ✅ commentCount 필드 추가!
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -62,16 +59,14 @@ public class BoardPost {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    // ✅ `userId` 매핑 문제 해결
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true) // user_id 매핑 유지
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-
         if (this.ipAddress == null || this.ipAddress.isEmpty()) {
             this.ipAddress = "0.0.0.0";
         }
@@ -82,17 +77,27 @@ public class BoardPost {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void upvote() {
-        this.votes++;
+    public synchronized void increaseViews() {
+        this.views++;
     }
 
-    public void downvote() {
-        if (this.votes > 0) {
+    public synchronized void adjustVoteCount(boolean upvote) {
+        if (upvote) {
+            this.votes++;
+        } else if (this.votes > 0) {
             this.votes--;
         }
     }
 
-    public synchronized void increaseViews() {
-        this.views++;
+    public void updatePost(String title, String content) {
+        this.title = title;
+        this.content = content;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // ✅ 댓글 개수를 자동으로 업데이트하는 메서드 추가
+    @PostLoad
+    public void updateCommentCount() {
+        this.commentCount = (comments != null) ? comments.size() : 0;
     }
 }

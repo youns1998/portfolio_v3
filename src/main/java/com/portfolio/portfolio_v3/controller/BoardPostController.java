@@ -2,8 +2,9 @@ package com.portfolio.portfolio_v3.controller;
 
 import com.portfolio.portfolio_v3.dto.*;
 import com.portfolio.portfolio_v3.service.BoardPostService;
-import com.portfolio.portfolio_v3.util.*;
-import io.swagger.v3.oas.annotations.*;
+import com.portfolio.portfolio_v3.util.ResponseUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,58 +21,66 @@ public class BoardPostController {
 
     private final BoardPostService boardPostService;
 
-    @Operation(summary = "게시글 단건 조회", description = "ID로 게시글 조회 및 조회수 증가 옵션")
+    @Operation(summary = "게시글 조회", description = "게시글 ID로 조회, 조회수 증가 가능")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{id}")
     public ResponseEntity<ResponseUtil.ApiResponse<BoardPostResponse>> getPostById(
         @Parameter(description = "게시글 ID") @PathVariable Long id,
-        @Parameter(description = "조회수 증가 여부") 
         @RequestParam(defaultValue = "false") boolean increaseViewCount
     ) {
-        return ResponseUtil.handle(() -> 
-            boardPostService.getPostById(id, increaseViewCount)
-        );
+        return ResponseUtil.handle(() -> boardPostService.getPostById(id, increaseViewCount));
     }
 
-    @Operation(summary = "게시글 목록 조회 (게시판 기준)")
+    @Operation(summary = "게시글 목록 조회")
     @GetMapping("/board/{boardId}")
     public ResponseEntity<ResponseUtil.ApiResponse<CustomPageResponse<BoardPostResponse>>> getPostsByBoard(
         @Parameter(description = "게시판 ID") @PathVariable String boardId,
-        @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
-        @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "10") int size,
-        @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "latest") String sortBy
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "latest") String sortBy
     ) {
-        return handlePagedResponse(() -> 
-            boardPostService.getPostsByBoard(boardId, page, size, sortBy),
-            "게시글 목록 조회 성공"
-        );
+        Page<BoardPostResponse> result = boardPostService.getPostsByBoard(boardId, page, size, sortBy);
+        return ResponseUtil.success(new CustomPageResponse<>(result), "게시글 목록 조회 성공");
     }
 
-    @Operation(summary = "게시글 생성", description = "신규 게시글 생성 (비회원시 비밀번호 필수)")
+    @Operation(summary = "게시글 생성", description = "회원/비회원 글쓰기 지원")
     @PostMapping
     public ResponseEntity<ResponseUtil.ApiResponse<BoardPostResponse>> createPost(
         @Valid @RequestBody BoardPostRequest request
     ) {
-        return ResponseUtil.handle(() -> 
-            boardPostService.createPost(request)
-        );
+        return ResponseUtil.handle(() -> boardPostService.createPost(request));
     }
 
-    // ... (나머지 메서드들도 동일한 패턴으로 수정)
-
-    // === Helper Methods ===
-    private ResponseEntity<ResponseUtil.ApiResponse<CustomPageResponse<BoardPostResponse>>> 
-        handlePagedResponse(PageSupplier<BoardPostResponse> supplier, String message) {
-        
-        return ResponseUtil.pagedSuccess(
-            new CustomPageResponse<>(supplier.get()),
-            message
-        );
+    @Operation(summary = "게시글 수정")
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseUtil.ApiResponse<BoardPostResponse>> updatePost(
+        @PathVariable Long id,
+        @Valid @RequestBody BoardPostRequest request
+    ) {
+        return ResponseUtil.handle(() -> boardPostService.updatePost(id, request));
     }
 
-    // === Functional Interface ===
-    @FunctionalInterface
-    private interface PageSupplier<T> {
-        Page<T> get();
+    @Operation(summary = "게시글 삭제")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ResponseUtil.ApiResponse<Void>> deletePost(
+        @PathVariable Long id
+    ) {
+        return ResponseUtil.handle(() -> {
+            boardPostService.deletePost(id);
+            return null;
+        });
+    }
+
+    @Operation(summary = "게시글 검색")
+    @GetMapping("/search")
+    public ResponseEntity<ResponseUtil.ApiResponse<CustomPageResponse<BoardPostResponse>>> searchPosts(
+        @RequestParam String keyword,
+        @RequestParam(required = false) String boardId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "latest") String sortBy
+    ) {
+        Page<BoardPostResponse> result = boardPostService.searchPosts(keyword, boardId, page, size, sortBy);
+        return ResponseUtil.success(new CustomPageResponse<>(result), "게시글 검색 결과");
     }
 }

@@ -1,7 +1,7 @@
 package com.portfolio.portfolio_v3.exception;
 
-import org.springframework.http.HttpStatus;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
 public class CustomException extends RuntimeException {
@@ -10,5 +10,11 @@ public class CustomException extends RuntimeException {
     public CustomException(String message, HttpStatus status) {
         super(message);
         this.status = status;
+    }
+
+    // ✅ ErrorCode를 받는 생성자 추가
+    public CustomException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.status = errorCode.getStatus();
     }
 }

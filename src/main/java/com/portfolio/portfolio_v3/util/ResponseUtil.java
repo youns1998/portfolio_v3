@@ -1,62 +1,65 @@
 package com.portfolio.portfolio_v3.util;
 
+import com.portfolio.portfolio_v3.exception.CustomException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.portfolio.portfolio_v3.dto.CustomPageResponse;
-import com.portfolio.portfolio_v3.exception.CustomException;
 import java.time.LocalDateTime;
 import java.util.Map;
 
 public class ResponseUtil {
 
+    private ResponseUtil() {}
+
     // ✅ 성공 응답 (데이터 포함)
+    public static <T> ResponseEntity<ApiResponse<T>> success(T data) {
+        return ResponseEntity.ok(new ApiResponse<>(true, data, "요청이 성공적으로 처리되었습니다."));
+    }
+
+    // ✅ 성공 응답 (데이터 + 커스텀 메시지)
     public static <T> ResponseEntity<ApiResponse<T>> success(T data, String message) {
-        return ResponseEntity.ok(new ApiResponse<>("success", message, data, LocalDateTime.now()));
+        return ResponseEntity.ok(new ApiResponse<>(true, data, message));
     }
 
-    // ✅ 페이징 응답 (Page 객체 포함)
-    public static <T> ResponseEntity<ApiResponse<CustomPageResponse<T>>> pagedSuccess(CustomPageResponse<T> pageResponse, String message) {
-        return ResponseEntity.ok(new ApiResponse<>("success", message, pageResponse, LocalDateTime.now()));
+    // ✅ 실패 응답 (단순 메시지)
+    public static <T> ResponseEntity<ApiResponse<T>> fail(String message, HttpStatus status) {
+        return ResponseEntity.status(status).body(new ApiResponse<>(false, null, message));
     }
 
-    // ✅ 에러 응답 (데이터 없음)
-    public static ResponseEntity<ApiResponse<Void>> error(String message) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>("error", message, null, LocalDateTime.now()));
+    // ✅ 실패 응답 (에러 메시지 Map 포함)
+    public static ResponseEntity<ApiResponse<Map<String, String>>> failWithErrors(
+            String message, Map<String, String> errors, HttpStatus status) {
+        return ResponseEntity.status(status).body(new ApiResponse<>(false, errors, message));
     }
 
-    // ✅ 에러 응답 (Map<String, String> 데이터 포함)
-    public static ResponseEntity<ApiResponse<Map<String, String>>> error(String message, Map<String, String> errors) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>("error", message, errors, LocalDateTime.now()));
-    }
-
-    // ✅ 커스텀 HTTP 상태 코드 지원
- // ✅ 제네릭 추가하여 타입 불일치 문제 해결
-    public static <T> ResponseEntity<ApiResponse<T>> error(String message, HttpStatus status) {
-        return ResponseEntity.status(status)
-                .body(new ApiResponse<>("error", message, null, LocalDateTime.now()));
-    }
-
-
-    // ✅ handle() 내부에서 예외 처리 (CustomException 포함)
+    // ✅ 예외 처리 통합 핸들러 (CustomException 지원)
     public static <T> ResponseEntity<ApiResponse<T>> handle(ServiceInvoker<T> invoker) {
         try {
-            return success(invoker.execute(), "요청이 성공적으로 처리되었습니다");
-        } catch (CustomException e) { // CustomException 직접 처리
-            return ResponseUtil.<T>error(e.getMessage(), e.getStatus());
-        } catch (Exception e) { // 기타 모든 예외 처리
-            return ResponseUtil.<T>error("서버 내부 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
+            return success(invoker.execute());
+        } catch (CustomException e) {
+            return fail(e.getMessage(), e.getStatus());
+        } catch (Exception e) {
+            return fail("서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // ✅ 표준 응답 DTO
-    public record ApiResponse<T>(
-        String status,
-        String message,
-        T data,
-        LocalDateTime timestamp
-    ) {}
+    // ✅ API 응답 객체
+    public static class ApiResponse<T> {
+        private final boolean success;
+        private final T data;
+        private final String message;
+        private final LocalDateTime timestamp = LocalDateTime.now();
+
+        public ApiResponse(boolean success, T data, String message) {
+            this.success = success;
+            this.data = data;
+            this.message = message;
+        }
+
+        public boolean isSuccess() { return success; }
+        public T getData() { return data; }
+        public String getMessage() { return message; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+    }
 
     @FunctionalInterface
     public interface ServiceInvoker<T> {
