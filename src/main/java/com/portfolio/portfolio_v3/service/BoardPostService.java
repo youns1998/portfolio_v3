@@ -73,7 +73,7 @@ public class BoardPostService {
 
         return convertToResponse(boardPostRepository.save(post));
     }
-
+//커밋 테스트
     @Transactional
     public void deletePost(Long id, String password) {
         BoardPost post = boardPostRepository.findById(id)
