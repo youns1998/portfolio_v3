@@ -7,14 +7,13 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // DTO 유효성 검사 실패 처리
+    // ✅ DTO 유효성 검사 실패 처리 (유지)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -26,13 +25,9 @@ public class GlobalExceptionHandler {
         return ResponseUtil.error("유효성 검사 실패", errors);
     }
 
-    // 커스텀 비즈니스 예외 처리
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<?> handleCustomException(CustomException ex) {
-        return ResponseUtil.error(ex.getMessage(), ex.getStatus());
-    }
-
-    // 기타 모든 예외 처리
+    // ❌ `CustomException` 핸들러 제거 가능 (ResponseUtil에서 이미 처리됨)
+    
+    // ✅ 기타 모든 예외 처리 (유지)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleAllExceptions(Exception ex) {
         return ResponseUtil.error("서버 내부 오류가 발생했습니다");

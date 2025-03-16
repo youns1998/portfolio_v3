@@ -2,6 +2,7 @@ package com.portfolio.portfolio_v3.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.portfolio.portfolio_v3.util.ValidationUtil;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class BoardPostRequest {
     private boolean isMember;
 
     private String password;
-    
+
     @JsonProperty("userId")
     private Long userId;
 
@@ -33,9 +34,13 @@ public class BoardPostRequest {
     @NotNull
     private String ipAddress;
 
-    public boolean validate() {
-        return ValidationUtil.isValidAuthor(author) &&
-                (isMember ? ValidationUtil.isValidUserId(userId) : 
-                           ValidationUtil.isValidPassword(password));
+    // ✅ `isValidRequest()` 추가
+    public boolean isValidRequest() {
+        return ValidationUtil.isNotEmpty(title) &&
+               ValidationUtil.isNotEmpty(content) &&
+               ValidationUtil.isNotEmpty(author) &&
+               ValidationUtil.isNotEmpty(boardId) &&
+               ValidationUtil.isValidIp(ipAddress) &&
+               (isMember ? ValidationUtil.isValidUserId(userId) : ValidationUtil.isNotEmpty(password));
     }
 }
