@@ -2,36 +2,55 @@ package com.portfolio.portfolio_v3.util;
 
 import org.springframework.http.ResponseEntity;
 
-import java.util.Map;
+import com.portfolio.portfolio_v3.dto.CustomPageResponse;
 
-/**
- * ✅ 공통 응답 유틸리티 클래스
- * - 컨트롤러에서 일관된 응답을 제공하도록 함
- */
+import java.time.LocalDateTime;
+
 public class ResponseUtil {
 
-    public static ResponseEntity<?> success(String message) {
-        return ResponseEntity.ok(Map.of("message", message));
+    // 성공 응답 (데이터 없음)
+    public static ResponseEntity<ApiResponse<Void>> success(String message) {
+        return ResponseEntity.ok(
+            new ApiResponse<>("success", message, null, LocalDateTime.now())
+        );
     }
 
-    public static ResponseEntity<?> successWithData(Object data) {
-        return ResponseEntity.ok(Map.of("data", data));
+    // 성공 응답 (데이터 포함)
+    public static <T> ResponseEntity<ApiResponse<T>> success(T data, String message) {
+        return ResponseEntity.ok(
+            new ApiResponse<>("success", message, data, LocalDateTime.now())
+        );
     }
 
-    public static ResponseEntity<?> error(String errorMessage) {
-        return ResponseEntity.badRequest().body(Map.of("error", errorMessage));
+    // 페이징 응답
+    public static <T> ResponseEntity<ApiResponse<CustomPageResponse<T>>> pagedSuccess(
+        CustomPageResponse<T> pageResponse,
+        String message
+    ) {
+        return ResponseEntity.ok(
+            new ApiResponse<>("success", message, pageResponse, LocalDateTime.now())
+        );
     }
 
-    public static ResponseEntity<?> handle(ServiceCall serviceCall) {
+    // 예외 핸들러 통합을 위한 래핑
+    public static <T> ResponseEntity<ApiResponse<T>> handle(ServiceInvoker<T> invoker) {
         try {
-            return successWithData(serviceCall.execute());
+            return success(invoker.execute(), "요청이 성공적으로 처리되었습니다");
         } catch (RuntimeException e) {
-            return error(e.getMessage());
+            throw e; // 글로벌 예외 핸들러에서 처리
         }
     }
 
+    // 표준 응답 DTO
+    public record ApiResponse<T>(
+        String status,
+        String message,
+        T data,
+        LocalDateTime timestamp
+    ) {}
+
     @FunctionalInterface
-    public interface ServiceCall {
-        Object execute();
+    public interface ServiceInvoker<T> {
+        T execute();
     }
 }
